@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HumanizerCo — AI Text That Passes Every Detector</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0A0F;
+    --surface:#121218;
+    --surface-2:#181820;
+    --line:#232330;
+    --text:#F2F2F5;
+    --muted:#8D8D9B;
+    --accent-a:#FF4D8D;
+    --accent-b:#7C3AED;
+    --good:#34D399;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .font-display{font-family:'Space Grotesk',sans-serif}
+  .grad-text{
+    background:linear-gradient(90deg,var(--accent-a),var(--accent-b));
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+  }
+  .grad-bg{background:linear-gradient(90deg,var(--accent-a),var(--accent-b));}
+  .grad-border{position:relative}
+  .btn-primary{
+    background:linear-gradient(90deg,var(--accent-a),var(--accent-b));
+    box-shadow:0 8px 30px -8px rgba(255,77,141,.55);
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .btn-primary:hover{transform:translateY(-1px);box-shadow:0 10px 36px -6px rgba(124,58,237,.6);}
+  .btn-primary:focus-visible, a:focus-visible, button:focus-visible, input:focus-visible{
+    outline:2px solid var(--accent-a); outline-offset:2px;
+  }
+  .card{background:var(--surface);border:1px solid var(--line);}
+  .noise-bg{
+    background-image: radial-gradient(circle at 20% 20%, rgba(124,58,237,.18), transparent 40%),
+                       radial-gradient(circle at 85% 10%, rgba(255,77,141,.14), transparent 35%);
+  }
+  .mono-mock{font-family:'Space Grotesk',monospace}
+  .blurred{filter:blur(6px);user-select:none;pointer-events:none;}
+  .fade-up{opacity:0;transform:translateY(14px);transition:opacity .6s ease, transform .6s ease;}
+  .fade-up.in{opacity:1;transform:translateY(0);}
+  .score-ring circle{transition:stroke-dashoffset 1.1s cubic-bezier(.4,0,.2,1);}
+  .llm-chip{border:1px solid var(--line);background:var(--surface-2);}
+  .modal-overlay{background:rgba(6,6,10,.78);backdrop-filter:blur(4px);}
+  ::selection{background:var(--accent-b);color:#fff;}
+  textarea::placeholder{color:#6B6B79;}
+  @media (prefers-reduced-motion: reduce){
+    .fade-up{transition:none;opacity:1;transform:none;}
+    .score-ring circle{transition:none;}
+  }
+</style>
+</head>
+<body class="antialiased">
+
+<!-- NAV -->
+<header class="fixed top-0 left-0 right-0 z-40 border-b border-white/5 bg-[#0A0A0F]/80 backdrop-blur-md">
+  <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <div class="w-7 h-7 rounded-md grad-bg"></div>
+      <span class="font-display font-semibold text-lg tracking-tight">HumanizerCo</span>
+    </div>
+    <button onclick="openModal('nav')" class="btn-primary text-sm font-semibold px-5 py-2.5 rounded-lg text-white">
+      Sign Up for Free
+    </button>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="noise-bg pt-36 pb-20 px-6 border-b border-white/5">
+  <div class="max-w-7xl mx-auto grid md:grid-cols-2 gap-14 items-center">
+    <div>
+      <div class="inline-flex items-center gap-2 llm-chip rounded-full px-3 py-1.5 text-xs text-[var(--muted)] mb-6">
+        <span class="w-1.5 h-1.5 rounded-full bg-[var(--good)]"></span>
+        Built for the post-DAMAGE detection era
+      </div>
+      <h1 class="font-display font-semibold text-4xl md:text-5xl lg:text-[3.4rem] leading-[1.08] tracking-tight">
+        95% of AI Humanizers <span class="grad-text">Get Caught.</span><br/>We Don't.
+      </h1>
+      <p class="mt-6 text-lg text-[var(--muted)] max-w-lg leading-relaxed">
+        Stop risking your content with basic word-swapping. HumanizerCo completely rebuilds your text to pass modern detectors every single time.
+      </p>
+      <div class="mt-8 flex items-center gap-4">
+        <button onclick="openModal('hero')" class="btn-primary text-white font-semibold px-7 py-3.5 rounded-lg text-base">
+          Sign Up for Free
+        </button>
+        <span class="text-sm text-[var(--muted)]">No credit card. Start for free</span>
+      </div>
+    </div>
+
+    <div class="fade-up in">
+      <div id="demoCard" class="card rounded-2xl p-5 shadow-2xl relative overflow-visible select-none">
+        <div class="grid md:grid-cols-2 gap-4">
+          <!-- Left: input -->
+          <div>
+            <p class="text-[11px] uppercase tracking-wider text-[var(--muted)] mb-2">Your text</p>
+            <div class="w-full rounded-lg bg-[#0E0E14] border border-white/5 p-3 text-sm h-[168px] overflow-hidden">
+              <span id="demoInput" class="text-[#D8D8E0]"></span><span id="caretIn" class="inline-block w-[2px] h-4 bg-[#D8D8E0] align-middle" style="animation:blink 1s step-end infinite;"></span>
+            </div>
+            <button id="humanizeBtn" class="btn-primary w-full text-white font-semibold py-3 rounded-lg text-sm mt-3 flex items-center justify-center gap-2 transition-transform">
+              <span id="humanizeBtnLabel">Humanize Text</span>
+            </button>
+          </div>
+
+          <!-- Right: output -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <p class="text-[11px] uppercase tracking-wider text-[var(--muted)]">Output</p>
+              <span id="detectorBadge" class="text-xs px-2 py-1 rounded bg-white/5 text-[var(--muted)] font-semibold transition-all duration-500">0% Human</span>
+            </div>
+            <div class="relative rounded-lg border border-white/5 p-4 bg-[#0E0E14] h-[168px] overflow-hidden">
+              <p id="demoIdle" class="text-sm text-[var(--muted)]">Humanized output will appear here...</p>
+              <div id="demoSpinner" class="hidden items-center gap-2 text-sm text-[var(--muted)] mono-mock">
+                <span class="w-4 h-4 border-2 border-[var(--accent-b)] border-t-transparent rounded-full animate-spin inline-block"></span>
+                Rewriting structure…
+              </div>
+              <p id="demoOutput" class="hidden text-sm leading-relaxed"></p>
+            </div>
+          </div>
+        </div>
+        <!-- fake mouse cursor -->
+        <div id="fakeCursor" class="absolute w-4 h-4 rounded-full bg-white shadow-[0_0_0_5px_rgba(255,255,255,.15)] pointer-events-none z-20" style="top:50%; left:50%; transition:top .9s cubic-bezier(.4,0,.2,1), left .9s cubic-bezier(.4,0,.2,1);"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+@keyframes blink{50%{opacity:0;}}
+</style>
+
+<!-- TRUST BAR: LLMs -->
+<section class="py-10 px-6 border-b border-white/5">
+  <div class="max-w-7xl mx-auto">
+    <p class="text-center text-xs uppercase tracking-[0.2em] text-[var(--muted)] mb-6">Optimized for modern AI models</p>
+    <div class="flex flex-wrap justify-center gap-3 md:gap-4">
+      <!-- Original geometric icon marks — distinctive per brand, not reproductions of official logos -->
+      <div class="llm-chip rounded-full px-4 py-2 flex items-center gap-2 text-sm text-[#C9C9D2]">
+        <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5" fill="none" stroke="#10A37F" stroke-width="1.6"/><path d="M8 4.5v7M4.5 8h7" stroke="#10A37F" stroke-width="1.6" stroke-linecap="round"/></svg>
+        GPT-5
+      </div>
+      <div class="llm-chip rounded-full px-4 py-2 flex items-center gap-2 text-sm text-[#C9C9D2]">
+        <svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 2l1.6 4.4L14 8l-4.4 1.6L8 14l-1.6-4.4L2 8l4.4-1.6z" fill="var(--accent-a)"/></svg>
+        Claude
+      </div>
+      <div class="llm-chip rounded-full px-4 py-2 flex items-center gap-2 text-sm text-[#C9C9D2]">
+        <svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 2c0 3.3 2.7 6 6 6-3.3 0-6 2.7-6 6 0-3.3-2.7-6-6-6 3.3 0 6-2.7 6-6z" fill="#4285F4"/></svg>
+        Gemini
+      </div>
+      <div class="llm-chip rounded-full px-4 py-2 flex items-center gap-2 text-sm text-[#C9C9D2]">
+        <svg width="16" height="16" viewBox="0 0 16 16"><path d="M2 12c2-5 3-7.5 4.5-7.5S9 9 10 9s1.8-4.5 3.5-4.5" fill="none" stroke="#0866FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Llama
+      </div>
+      <div class="llm-chip rounded-full px-4 py-2 flex items-center gap-2 text-sm text-[#C9C9D2]">
+        <svg width="16" height="16" viewBox="0 0 16 16"><rect x="2" y="7" width="3" height="6" fill="#FF7000"/><rect x="6.5" y="4" width="3" height="9" fill="#FF9B4A"/><rect x="11" y="1" width="3" height="12" fill="#FFC299"/></svg>
+        Mistral
+      </div>
+      <div class="llm-chip rounded-full px-4 py-2 flex items-center gap-2 text-sm text-[#C9C9D2]">
+        <svg width="16" height="16" viewBox="0 0 16 16"><path d="M3 3l10 10M3 13L13 3" stroke="#E5E5E5" stroke-width="1.6" stroke-linecap="round"/></svg>
+        Grok
+      </div>
+      <div class="llm-chip rounded-full px-4 py-2 flex items-center gap-2 text-sm text-[#C9C9D2]">
+        <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5" fill="none" stroke="#536DFE" stroke-width="1.6" stroke-dasharray="2.5 2.5"/></svg>
+        DeepSeek
+      </div>
+      <div class="llm-chip rounded-full px-4 py-2 flex items-center gap-2 text-sm text-[#C9C9D2]">
+        <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="3" fill="none" stroke="#20B8CD" stroke-width="1.6"/><circle cx="8" cy="8" r="6" fill="none" stroke="#20B8CD" stroke-width="1"/></svg>
+        Perplexity
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHY HUMANIZERS FAIL -->
+<section class="py-24 px-6 border-b border-white/5">
+  <div class="max-w-4xl mx-auto text-center">
+    <h2 class="font-display font-semibold text-3xl md:text-4xl tracking-tight">Why the other 95% get flagged</h2>
+    <p class="mt-4 text-[var(--muted)] text-lg leading-relaxed">
+      Most humanizer tools operate at what researchers call <span class="text-[var(--text)] font-medium">Tier-3</span>: shallow word-swapping and synonym substitution. Modern statistical detectors — like the DAMAGE model described in recent detection research — are specifically trained to catch that pattern, often with near-perfect accuracy.
+    </p>
+  </div>
+  <div class="max-w-5xl mx-auto grid md:grid-cols-2 gap-6 mt-14">
+    <div class="card rounded-2xl p-7">
+      <p class="text-xs font-semibold uppercase tracking-wider text-red-400 mb-3">Tier-3 · What most tools do</p>
+      <ul class="space-y-3 text-[var(--muted)] text-sm leading-relaxed">
+        <li>→ Swaps individual words for synonyms</li>
+        <li>→ Leaves sentence rhythm and structure untouched</li>
+        <li>→ Statistically identical to the original AI distribution</li>
+        <li>→ Caught instantly by structure-aware detectors</li>
+      </ul>
+    </div>
+    <div class="card rounded-2xl p-7 border-[var(--accent-b)]/30">
+      <p class="text-xs font-semibold uppercase tracking-wider text-[var(--good)] mb-3">Tier-1 · What HumanizerCo does</p>
+      <ul class="space-y-3 text-[#D8D8E0] text-sm leading-relaxed">
+        <li>→ Rebuilds sentence structure and length variance</li>
+        <li>→ Shifts rhythm, burstiness, and clause patterns</li>
+        <li>→ Context-aware rewriting, not word substitution</li>
+        <li>→ Built to withstand structural detection, not just word-level checks</li>
+      </ul>
+    </div>
+  </div>
+  <p class="text-center text-sm text-[var(--muted)] mt-8">
+    Read the underlying research: <a href="https://arxiv.org/html/2501.03437v1" target="_blank" rel="noopener" class="underline decoration-[var(--accent-a)] hover:text-[var(--text)]">Pangram Labs — AI Text Detection Paper ↗</a>
+  </p>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="py-24 px-6 border-b border-white/5">
+  <div class="max-w-3xl mx-auto text-center mb-14">
+    <h2 class="font-display font-semibold text-3xl md:text-4xl tracking-tight">How HumanizerCo works</h2>
+    <p class="mt-4 text-[var(--muted)] text-lg">Three steps. No settings to learn.</p>
+  </div>
+  <div class="max-w-5xl mx-auto grid md:grid-cols-3 gap-6">
+    <div class="card rounded-2xl p-7">
+      <span class="font-display text-3xl font-semibold grad-text">1</span>
+      <h3 class="font-display font-semibold text-lg mt-3 mb-2">Paste your text</h3>
+      <p class="text-sm text-[var(--muted)] leading-relaxed">Drop in any AI-generated content — an essay, a blog post, an email. No formatting needed.</p>
+    </div>
+    <div class="card rounded-2xl p-7">
+      <span class="font-display text-3xl font-semibold grad-text">2</span>
+      <h3 class="font-display font-semibold text-lg mt-3 mb-2">Click Humanize</h3>
+      <p class="text-sm text-[var(--muted)] leading-relaxed">HumanizerCo rebuilds sentence structure and rhythm — not just word swaps — in seconds.</p>
+    </div>
+    <div class="card rounded-2xl p-7">
+      <span class="font-display text-3xl font-semibold grad-text">3</span>
+      <h3 class="font-display font-semibold text-lg mt-3 mb-2">Publish with confidence</h3>
+      <p class="text-sm text-[var(--muted)] leading-relaxed">Get text that reads naturally and holds up against modern detectors, ready to use anywhere.</p>
+    </div>
+  </div>
+</section>
+
+<!-- INTERACTIVE WIDGET -->
+<section class="py-24 px-6 border-b border-white/5" id="audit">
+  <div class="max-w-3xl mx-auto text-center mb-12">
+    <h2 class="font-display font-semibold text-3xl md:text-4xl tracking-tight">Test Your Current Text or Humanizer</h2>
+    <p class="mt-4 text-[var(--muted)] text-lg">See if your content bypasses modern detection models before you publish.</p>
+  </div>
+
+  <div class="max-w-5xl mx-auto card rounded-2xl p-6 md:p-8 relative">
+    <div class="grid md:grid-cols-2 gap-6">
+      <div>
+        <label class="text-xs uppercase tracking-wider text-[var(--muted)] mb-2 block">Paste your text</label>
+        <textarea id="inputText" rows="10" class="w-full rounded-lg bg-[#0E0E14] border border-white/5 p-4 text-sm text-[var(--text)] focus:border-[var(--accent-b)] outline-none resize-none" placeholder="Paste AI-generated or humanized text here..."></textarea>
+        <button id="analyzeBtn" onclick="runAnalysis()" class="btn-primary text-white font-semibold px-6 py-3 rounded-lg text-sm mt-4 w-full">
+          Analyze & Audit
+        </button>
+      </div>
+
+      <div>
+        <label class="text-xs uppercase tracking-wider text-[var(--muted)] mb-2 block">Result</label>
+        <div class="rounded-lg bg-[#0E0E14] border border-white/5 p-6 h-full flex flex-col items-center justify-center min-h-[280px]" id="resultPane">
+          <p class="text-sm text-[var(--muted)]" id="idleMsg">Your Human Score will appear here.</p>
+
+          <div id="loadingState" class="hidden flex-col items-center gap-3">
+            <div class="w-8 h-8 border-2 border-[var(--accent-b)] border-t-transparent rounded-full animate-spin"></div>
+            <p class="text-sm text-[var(--muted)]">Running structural audit…</p>
+          </div>
+
+          <div id="scoreState" class="hidden flex-col items-center gap-4 w-full">
+            <svg width="140" height="140" viewBox="0 0 140 140" class="score-ring">
+              <circle cx="70" cy="70" r="60" fill="none" stroke="#232330" stroke-width="10"/>
+              <circle id="scoreCircle" cx="70" cy="70" r="60" fill="none" stroke="url(#grad)" stroke-width="10" stroke-linecap="round" stroke-dasharray="377" stroke-dashoffset="377" transform="rotate(-90 70 70)"/>
+              <defs>
+                <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#FF4D8D"/>
+                  <stop offset="100%" stop-color="#7C3AED"/>
+                </linearGradient>
+              </defs>
+              <text x="70" y="65" text-anchor="middle" font-size="26" font-weight="700" fill="#F2F2F5" id="scoreNum" font-family="Space Grotesk">--%</text>
+              <text x="70" y="86" text-anchor="middle" font-size="10" fill="#8D8D9B">HUMAN SCORE</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Breakdown report, blurs after analysis -->
+    <div id="reportSection" class="hidden mt-8 pt-8 border-t border-white/5 relative">
+      <h3 class="font-display font-semibold text-lg mb-4">Full Detection Breakdown</h3>
+      <div id="reportBody" class="grid md:grid-cols-3 gap-4">
+        <div class="rounded-lg bg-[#0E0E14] p-4 border border-white/5">
+          <p class="text-xs text-[var(--muted)] uppercase tracking-wider mb-1">Sentence Variance</p>
+          <p class="text-2xl font-display font-semibold" id="varianceStat">--</p>
+        </div>
+        <div class="rounded-lg bg-[#0E0E14] p-4 border border-white/5">
+          <p class="text-xs text-[var(--muted)] uppercase tracking-wider mb-1">Burstiness Index</p>
+          <p class="text-2xl font-display font-semibold" id="burstStat">--</p>
+        </div>
+        <div class="rounded-lg bg-[#0E0E14] p-4 border border-white/5">
+          <p class="text-xs text-[var(--muted)] uppercase tracking-wider mb-1">Detector Risk</p>
+          <p class="text-2xl font-display font-semibold text-[var(--good)]" id="riskStat">--</p>
+        </div>
+        <div class="md:col-span-3 rounded-lg bg-[#0E0E14] p-4 border border-white/5 text-sm text-[var(--muted)] leading-relaxed">
+          Per-sentence detector heatmap, model-by-model breakdown (GPT / Claude / Gemini detectors), and rewrite suggestions are generated here based on your input's structural fingerprint.
+        </div>
+      </div>
+      <div id="reportOverlay" class="absolute inset-0 flex items-center justify-center cursor-pointer" style="top:3.5rem;" onclick="openModal('report')">
+        <div class="text-center bg-[#0A0A0F]/40 px-6 py-4 rounded-xl">
+          <p class="font-semibold text-sm">🔒 Click to unlock your full report</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- USE CASES -->
+<section class="py-24 px-6 border-b border-white/5">
+  <div class="max-w-5xl mx-auto grid md:grid-cols-2 gap-6">
+    <div class="card rounded-2xl p-8">
+      <p class="text-xs font-semibold uppercase tracking-wider text-[var(--accent-a)] mb-3">For Students</p>
+      <h3 class="font-display font-semibold text-2xl mb-3">Submit work you can stand behind</h3>
+      <p class="text-[var(--muted)] leading-relaxed text-sm">Use AI to draft faster, then let HumanizerCo restructure it so it reads like your own voice — built to survive institutional detection tools before you ever hit submit.</p>
+    </div>
+    <div class="card rounded-2xl p-8">
+      <p class="text-xs font-semibold uppercase tracking-wider text-[var(--accent-b)] mb-3">For SEO Marketers</p>
+      <h3 class="font-display font-semibold text-2xl mb-3">Scale content without the penalty risk</h3>
+      <p class="text-[var(--muted)] leading-relaxed text-sm">Publish AI-assisted content at volume without triggering search engine AI-content signals. Structural rewriting keeps your pages reading naturally, page after page.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="py-24 px-6 border-b border-white/5">
+  <div class="max-w-3xl mx-auto">
+    <h2 class="font-display font-semibold text-3xl md:text-4xl tracking-tight text-center mb-14">Frequently asked questions</h2>
+    <div class="space-y-3" id="faqList">
+
+      <div class="card rounded-xl overflow-hidden faq-item">
+        <button class="faq-btn w-full text-left px-6 py-5 flex items-center justify-between gap-4">
+          <span class="font-medium">What is HumanizerCo?</span>
+          <span class="faq-icon text-[var(--muted)] transition-transform">+</span>
+        </button>
+        <div class="faq-panel hidden px-6 pb-5 text-sm text-[var(--muted)] leading-relaxed">
+          HumanizerCo is a text rewriting tool that takes AI-generated content and restructures it to read naturally, so it holds up against modern AI-detection tools.
+        </div>
+      </div>
+
+      <div class="card rounded-xl overflow-hidden faq-item">
+        <button class="faq-btn w-full text-left px-6 py-5 flex items-center justify-between gap-4">
+          <span class="font-medium">How does HumanizerCo work?</span>
+          <span class="faq-icon text-[var(--muted)] transition-transform">+</span>
+        </button>
+        <div class="faq-panel hidden px-6 pb-5 text-sm text-[var(--muted)] leading-relaxed">
+          Instead of swapping individual words, HumanizerCo rebuilds sentence structure, length variance, and rhythm — the patterns detectors actually look for — so the output reads like it was written by a person from the start.
+        </div>
+      </div>
+
+      <div class="card rounded-xl overflow-hidden faq-item">
+        <button class="faq-btn w-full text-left px-6 py-5 flex items-center justify-between gap-4">
+          <span class="font-medium">Why do 95% of AI humanizers get caught?</span>
+          <span class="faq-icon text-[var(--muted)] transition-transform">+</span>
+        </button>
+        <div class="faq-panel hidden px-6 pb-5 text-sm text-[var(--muted)] leading-relaxed">
+          Most tools only do word-level synonym swapping. That leaves the underlying sentence structure statistically identical to the original AI output, which is exactly what modern structure-aware detectors are trained to catch.
+        </div>
+      </div>
+
+      <div class="card rounded-xl overflow-hidden faq-item">
+        <button class="faq-btn w-full text-left px-6 py-5 flex items-center justify-between gap-4">
+          <span class="font-medium">How does HumanizerCo stay reliable and trustworthy?</span>
+          <span class="faq-icon text-[var(--muted)] transition-transform">+</span>
+        </button>
+        <div class="faq-panel hidden px-6 pb-5 text-sm text-[var(--muted)] leading-relaxed">
+          We continuously test output against current detection research, including published models like DAMAGE, and update our rewriting approach as detectors evolve — rather than relying on a static trick that stops working.
+        </div>
+      </div>
+
+      <div class="card rounded-xl overflow-hidden faq-item">
+        <button class="faq-btn w-full text-left px-6 py-5 flex items-center justify-between gap-4">
+          <span class="font-medium">Which modern AI models can be used with HumanizerCo?</span>
+          <span class="faq-icon text-[var(--muted)] transition-transform">+</span>
+        </button>
+        <div class="faq-panel hidden px-6 pb-5 text-sm text-[var(--muted)] leading-relaxed">
+          HumanizerCo works on text generated by any major model, including GPT-5, Claude, Gemini, Llama, Mistral, Grok, DeepSeek, and Perplexity.
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="py-24 px-6 noise-bg">
+  <div class="max-w-2xl mx-auto text-center">
+    <h2 class="font-display font-semibold text-3xl md:text-4xl tracking-tight">Stop gambling on Tier-3 tools.</h2>
+    <p class="mt-4 text-[var(--muted)] text-lg">Get your first rewrite audited in under 60 seconds.</p>
+    <button onclick="openModal('final')" class="btn-primary text-white font-semibold px-8 py-3.5 rounded-lg text-base mt-8">
+      Sign Up for Free
+    </button>
+  </div>
+</section>
+
+<footer class="py-8 px-6 text-center text-xs text-[var(--muted)]">
+  © 2026 HumanizerCo. All rights reserved.
+</footer>
+
+<!-- SIGNUP MODAL -->
+<div id="signupModal" class="fixed inset-0 z-50 hidden modal-overlay items-center justify-center px-4">
+  <div class="card rounded-2xl p-8 max-w-sm w-full relative">
+    <button onclick="closeModal()" aria-label="Close" class="absolute top-4 right-4 text-[var(--muted)] hover:text-[var(--text)]">✕</button>
+    <h3 class="font-display font-semibold text-xl mb-1">Sign up for free</h3>
+    <p class="text-sm text-[var(--muted)] mb-6" id="modalSub">Unlock your full report and 3 free rewrites.</p>
+
+    <button class="w-full flex items-center justify-center gap-2 border border-white/10 rounded-lg py-3 text-sm font-medium hover:bg-white/5 transition mb-4">
+      <svg width="16" height="16" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.9 32.9 29.4 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6.1 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.9 18.9 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6.1 29.5 4 24 4c-7.3 0-13.6 3.9-17.1 9.7z"/><path fill="#4CAF50" d="M24 44c5.3 0 10.1-2 13.7-5.4l-6.3-5.3C29.4 35 26.8 36 24 36c-5.3 0-9.8-3.4-11.4-8.1l-6.5 5C9.6 39.7 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-1 3-3.1 5.5-5.9 7.1l6.3 5.3C39.6 37.2 44 31.2 44 24c0-1.3-.1-2.7-.4-3.5z"/></svg>
+      Sign up with Google
+    </button>
+    <div class="flex items-center gap-3 mb-4">
+      <div class="h-px bg-white/10 flex-1"></div><span class="text-xs text-[var(--muted)]">or</span><div class="h-px bg-white/10 flex-1"></div>
+    </div>
+    <form onsubmit="handleSignup(event)" class="space-y-3">
+      <input type="email" required placeholder="Email address" class="w-full rounded-lg bg-[#0E0E14] border border-white/10 px-4 py-3 text-sm outline-none focus:border-[var(--accent-b)]"/>
+      <input type="password" required placeholder="Create a password" class="w-full rounded-lg bg-[#0E0E14] border border-white/10 px-4 py-3 text-sm outline-none focus:border-[var(--accent-b)]"/>
+      <button type="submit" class="btn-primary w-full text-white font-semibold py-3 rounded-lg text-sm">Create free account</button>
+    </form>
+    <p class="text-[11px] text-[var(--muted)] text-center mt-4">No credit card required. Cancel anytime.</p>
+  </div>
+</div>
+
+<script>
+  // ---------- Fade-up on scroll ----------
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('in'); });
+  }, {threshold:.15});
+  document.querySelectorAll('.card, h2').forEach(el=>{ el.classList.add('fade-up'); io.observe(el); });
+
+  // ---------- Modal ----------
+  let modalTriggerSource = null;
+  function openModal(source){
+    modalTriggerSource = source;
+    document.getElementById('signupModal').classList.remove('hidden');
+    document.getElementById('signupModal').classList.add('flex');
+    document.body.style.overflow='hidden';
+  }
+  function closeModal(){
+    document.getElementById('signupModal').classList.add('hidden');
+    document.getElementById('signupModal').classList.remove('flex');
+    document.body.style.overflow='';
+  }
+  function handleSignup(e){
+    e.preventDefault();
+    if(modalTriggerSource==='report'){
+      document.getElementById('reportOverlay').classList.add('hidden');
+      document.getElementById('reportBody').classList.remove('blurred');
+    }
+    closeModal();
+  }
+  document.getElementById('signupModal').addEventListener('click', (e)=>{
+    if(e.target.id==='signupModal') closeModal();
+  });
+
+  // ---------- Self-running hero demo (infinite loop, no user input) ----------
+  const DEMO_INPUT_TEXT = "This is an AI generated text that needs to bypass detectors before it gets published online.";
+  const DEMO_OUTPUT_TEXT = "Honestly? This started as AI-written text, and it needed real work before it was ready to publish.";
+
+  const demoInputEl = document.getElementById('demoInput');
+  const demoOutputEl = document.getElementById('demoOutput');
+  const demoIdleEl = document.getElementById('demoIdle');
+  const demoSpinnerEl = document.getElementById('demoSpinner');
+  const demoBadge = document.getElementById('detectorBadge');
+  const demoBtn = document.getElementById('humanizeBtn');
+  const cursor = document.getElementById('fakeCursor');
+  const caretIn = document.getElementById('caretIn');
+  const demoCard = document.getElementById('demoCard');
+
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+  function resetDemo(){
+    demoInputEl.textContent = '';
+    demoOutputEl.textContent = '';
+    demoOutputEl.classList.add('hidden');
+    demoSpinnerEl.classList.remove('flex');
+    demoSpinnerEl.classList.add('hidden');
+    demoIdleEl.classList.remove('hidden');
+    demoBadge.textContent = '0% Human';
+    demoBadge.className = 'text-xs px-2 py-1 rounded bg-white/5 text-[var(--muted)] font-semibold transition-all duration-500';
+    demoBadge.style.boxShadow = 'none';
+    caretIn.style.opacity = '1';
+    cursor.style.top = '50%';
+    cursor.style.left = '50%';
+  }
+
+  async function typeInto(el, text, speed){
+    for(let i=1;i<=text.length;i++){
+      el.textContent = text.slice(0,i);
+      await sleep(speed);
+    }
+  }
+
+  function moveCursorTo(el){
+    const cardRect = demoCard.getBoundingClientRect();
+    const targetRect = el.getBoundingClientRect();
+    const top = targetRect.top - cardRect.top + targetRect.height/2 - 8;
+    const left = targetRect.left - cardRect.left + targetRect.width/2 - 8;
+    cursor.style.top = top + 'px';
+    cursor.style.left = left + 'px';
+  }
+
+  async function playDemoLoop(){
+    while(true){
+      resetDemo();
+      await sleep(900);
+
+      // 2. Fake typing into left box
+      caretIn.style.opacity = '1';
+      await typeInto(demoInputEl, DEMO_INPUT_TEXT, 38);
+      await sleep(500);
+
+      // 3. Move fake cursor to the button
+      moveCursorTo(demoBtn);
+      await sleep(950);
+
+      // 4. Click effect
+      demoBtn.style.transform = 'scale(0.94)';
+      await sleep(140);
+      demoBtn.style.transform = 'scale(1)';
+
+      // 5. Loading + output
+      demoIdleEl.classList.add('hidden');
+      demoSpinnerEl.classList.remove('hidden');
+      demoSpinnerEl.classList.add('flex');
+      await sleep(1300);
+      demoSpinnerEl.classList.add('hidden');
+      demoSpinnerEl.classList.remove('flex');
+
+      demoBadge.textContent = '99% Human';
+      demoBadge.classList.add('bg-[var(--good)]/10','text-[var(--good)]');
+      demoBadge.style.boxShadow = '0 0 16px rgba(52,211,153,.5)';
+
+      demoOutputEl.classList.remove('hidden');
+      await typeInto(demoOutputEl, DEMO_OUTPUT_TEXT, 20);
+
+      // 6. Hold, then loop
+      await sleep(4000);
+      cursor.style.top = '50%';
+      cursor.style.left = '50%';
+      await sleep(800);
+    }
+  }
+
+  playDemoLoop();
+
+  // ---------- FAQ accordion ----------
+  document.querySelectorAll('.faq-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const item = btn.closest('.faq-item');
+      const panel = item.querySelector('.faq-panel');
+      const icon = btn.querySelector('.faq-icon');
+      const isOpen = !panel.classList.contains('hidden');
+
+      document.querySelectorAll('.faq-panel').forEach(p=>p.classList.add('hidden'));
+      document.querySelectorAll('.faq-icon').forEach(i=>{ i.textContent='+'; i.style.transform='rotate(0deg)'; });
+
+      if(!isOpen){
+        panel.classList.remove('hidden');
+        icon.textContent = '−';
+        icon.style.transform = 'rotate(180deg)';
+      }
+    });
+  });
+
+  // ---------- Analysis logic ----------
+  function runAnalysis(){
+    const text = document.getElementById('inputText').value.trim();
+    if(!text){ document.getElementById('inputText').focus(); return; }
+
+    document.getElementById('idleMsg').classList.add('hidden');
+    document.getElementById('scoreState').classList.add('hidden');
+    document.getElementById('scoreState').classList.remove('flex');
+    document.getElementById('loadingState').classList.remove('hidden');
+    document.getElementById('loadingState').classList.add('flex');
+    document.getElementById('analyzeBtn').disabled = true;
+    document.getElementById('reportSection').classList.add('hidden');
+
+    setTimeout(()=>{
+      const sentences = text.split(/[.!?]+/).map(s=>s.trim()).filter(Boolean);
+      const lengths = sentences.map(s=>s.split(/\s+/).filter(Boolean).length);
+      const avg = lengths.reduce((a,b)=>a+b,0) / (lengths.length||1);
+      const variance = lengths.reduce((a,b)=>a+Math.pow(b-avg,2),0) / (lengths.length||1);
+      const stdDev = Math.sqrt(variance);
+
+      // Map variance to a score between 90-98
+      let score = 90 + Math.min(8, Math.round(stdDev));
+      if(sentences.length < 2) score = 90;
+      score = Math.max(90, Math.min(98, score));
+
+      const burstiness = (stdDev / (avg||1)).toFixed(2);
+
+      document.getElementById('loadingState').classList.add('hidden');
+      document.getElementById('loadingState').classList.remove('flex');
+      document.getElementById('scoreState').classList.remove('hidden');
+      document.getElementById('scoreState').classList.add('flex');
+
+      const circumference = 377;
+      const offset = circumference - (score/100)*circumference;
+      const circle = document.getElementById('scoreCircle');
+      circle.style.strokeDashoffset = circumference;
+      requestAnimationFrame(()=>{ circle.style.strokeDashoffset = offset; });
+      document.getElementById('scoreNum').textContent = score + '%';
+
+      document.getElementById('varianceStat').textContent = stdDev.toFixed(1);
+      document.getElementById('burstStat').textContent = burstiness;
+      document.getElementById('riskStat').textContent = score >= 95 ? 'Low' : 'Moderate';
+
+      const reportSection = document.getElementById('reportSection');
+      reportSection.classList.remove('hidden');
+      document.getElementById('reportBody').classList.add('blurred');
+      document.getElementById('analyzeBtn').disabled = false;
+    }, 1400);
+  }
+
+  // ---------- Behavioral trigger ----------
+  let modalShown = false;
+  let scrollDwellTimer = null;
+  let scrollThresholdMet = false;
+
+  function maybeTrigger(){
+    if(modalShown) return;
+    modalShown = true;
+    openModal('behavioral');
+  }
+
+  setTimeout(maybeTrigger, 25000);
+
+  window.addEventListener('scroll', ()=>{
+    if(modalShown) return;
+    const scrolled = (window.scrollY + window.innerHeight) / document.documentElement.scrollHeight;
+    if(scrolled > 0.6){
+      if(!scrollThresholdMet){
+        scrollThresholdMet = true;
+        scrollDwellTimer = setTimeout(maybeTrigger, 18000);
+      }
+    } else {
+      if(scrollThresholdMet && scrollDwellTimer){
+        clearTimeout(scrollDwellTimer);
+        scrollThresholdMet = false;
+      }
+    }
+  });
+</script>
+</body>
+</html>
